@@ -6,6 +6,12 @@ from aliyunsdkalidns.request.v20150109.DescribeDomainRecordsRequest import Descr
 import requests
 from urllib.request import urlopen
 import json
+import logging
+import datetime
+import sys
+import os
+#切换到脚本所在目录
+os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
 
 ipv4_flag = 1  # 是否开启ipv4 ddns解析,1为开启，0为关闭
 ipv6_flag = 1  # 是否开启ipv6 ddns解析,1为开启，0为关闭
@@ -14,7 +20,31 @@ accessSecret = "accessSecret"  # 将accessSecret改成自己的accessSecret
 domain = "zeruns.tech"  # 你的主域名
 name_ipv4 = "blog"  # 要进行ipv4 ddns解析的子域名
 name_ipv6 = "ipv6.test"  # 要进行ipv6 ddns解析的子域名
+log_file_flag = 1  # 日志同时输出到文件,1为开启，0为关闭
 
+
+logger = logging.getLogger('mylogger')
+logger.setLevel(logging.INFO)
+#控制台
+log_handler = logging.StreamHandler(sys.stderr)#默认是sys.stderr
+log_handler.setLevel(logging.INFO) 
+log_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(message)s"))
+#文件
+log_file_handler = logging.FileHandler('ip.log')
+log_file_handler.setLevel(logging.INFO)
+log_file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s[:%(lineno)d] - %(message)s"))
+#添加生效
+logger.addHandler(log_handler)
+if log_file_flag == 1:
+    logger.addHandler(log_file_handler)
+ 
+#logger.debug('debug message')
+#logger.info('info message')
+#logger.warning('warning message')
+#logger.error('error message')
+#logger.critical('critical message')
+
+logger.info('程序开始')
 
 client = AcsClient(accessKeyId, accessSecret, 'cn-hangzhou')
 
@@ -51,17 +81,17 @@ if ipv4_flag == 1:
 
     ip = urlopen('https://api-ipv4.ip.sb/ip').read()  # 使用IP.SB的接口获取ipv4地址
     ipv4 = str(ip, encoding='utf-8')
-    print("获取到IPv4地址：%s" % ipv4)
+    logger.info("获取到IPv4地址：%s" % ipv4)
 
     if domain_list['TotalCount'] == 0:
         add(domain, name_ipv4, "A", ipv4)
-        print("新建域名解析成功")
+        logger.info("新建域名解析成功")
     elif domain_list['TotalCount'] == 1:
         if domain_list['DomainRecords']['Record'][0]['Value'].strip() != ipv4.strip():
             update(domain_list['DomainRecords']['Record'][0]['RecordId'], name_ipv4, "A", ipv4)
-            print("修改域名解析成功")
+            logger.info("修改域名解析成功")
         else:  # https://blog.zeruns.tech
-            print("IPv4地址没变")
+            logger.info("IPv4地址没变")
     elif domain_list['TotalCount'] > 1:
         from aliyunsdkalidns.request.v20150109.DeleteSubDomainRecordsRequest import DeleteSubDomainRecordsRequest
         request = DeleteSubDomainRecordsRequest()
@@ -71,9 +101,8 @@ if ipv4_flag == 1:
         request.set_Type("A") 
         response = client.do_action_with_exception(request)
         add(domain, name_ipv4, "A", ipv4)
-        print("修改域名解析成功")
+        logger.info("修改域名解析成功")
 
-print("本程序版权属于zeruns，博客：https://blog.zeruns.tech")
 
 if ipv6_flag == 1:
     request = DescribeSubDomainRecordsRequest()
@@ -86,17 +115,17 @@ if ipv6_flag == 1:
 
     ip = urlopen('https://api-ipv6.ip.sb/ip').read()  # 使用IP.SB的接口获取ipv6地址
     ipv6 = str(ip, encoding='utf-8')
-    print("获取到IPv6地址：%s" % ipv6)
+    logger.info("获取到IPv6地址：%s" % ipv6)
 
     if domain_list['TotalCount'] == 0:
         add(domain, name_ipv6, "AAAA", ipv6)
-        print("新建域名解析成功")
+        logger.info("新建域名解析成功")
     elif domain_list['TotalCount'] == 1:
         if domain_list['DomainRecords']['Record'][0]['Value'].strip() != ipv6.strip():
             update(domain_list['DomainRecords']['Record'][0]['RecordId'], name_ipv6, "AAAA", ipv6)
-            print("修改域名解析成功")
+            logger.info("修改域名解析成功")
         else:  # https://blog.zeruns.tech
-            print("IPv6地址没变")
+            logger.info("IPv6地址没变")
     elif domain_list['TotalCount'] > 1:
         from aliyunsdkalidns.request.v20150109.DeleteSubDomainRecordsRequest import DeleteSubDomainRecordsRequest
         request = DeleteSubDomainRecordsRequest()
@@ -106,4 +135,4 @@ if ipv6_flag == 1:
         request.set_Type("AAAA") 
         response = client.do_action_with_exception(request)
         add(domain, name_ipv6, "AAAA", ipv6)
-        print("修改域名解析成功")
+        logger.info("修改域名解析成功")
