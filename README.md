@@ -8,3 +8,4 @@ pip install aliyun-python-sdk-alidns
 pip install requests
 ```
 详细使用方法：[https://blog.zeruns.tech/archives/507.html](https://blog.zeruns.tech/archives/507.html)
+
